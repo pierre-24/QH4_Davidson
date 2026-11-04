@@ -127,7 +127,7 @@
 	\end{enumerate}
 \end{frame}
 
-\section{A very simple algorithm: the power iteration}
+\section{The power iteration, and  other Krylov subspace methods}
 
 \begin{frame}
 	The power iteration is a relatively simple algorithm:
@@ -139,14 +139,14 @@
 		$k \gets 0$\;
 		\While{$\|\mathbf A\mathbf b_k-\lambda_k\mathbf b_k\|>\varepsilon$}{
 			$\mathbf b_{k+1} \gets \dfrac{\mathbf A\mathbf b_k}{\|\mathbf A\mathbf b_k\|}$ \Comment*{Assuming that $\mathbf A\mathbf b_k\neq \mathbf 0$.}
-			$\lambda_{k+1} \gets R(\mathbf A,\mathbf b_{k+1})$\;
+			$\lambda_{k+1} \gets \rho(\mathbf A,\mathbf b_{k+1})$\;
 			$k \gets k+1$\;
 		}
 		\Return{$\lambda_k$, $\mathbf b_k$}\;
 	\end{algorithm}
 	where
 	\begin{equation*}
-		R(\mathbf A,\mathbf b_k) = \frac{\mathbf b_k^\star\mathbf A\mathbf b_k}{\mathbf b_k^\star\mathbf b_k}
+		\rho(\mathbf A,\mathbf b_k) = \frac{\mathbf b_k^\star\mathbf A\mathbf b_k}{\mathbf b_k^\star\mathbf b_k}
 	\end{equation*}
 	is the Rayleigh quotient, which provides an estimate of the eigenvalue associated with $\mathbf b_k$.
 \end{frame}
@@ -217,7 +217,30 @@
 	\end{center}
 \end{frame}
 
-\section{Rayleigh--Ritz: solving the eigenvalue problem in a subspace}
+\begin{frame}
+	In passing, Krylov subspaces are not only useful for eigenvalue problems. 
+	They are also at the heart of iterative methods for solving large linear systems:
+	\begin{equation*}
+		\mathbf A\mathbf x=\mathbf b.
+	\end{equation*}
+	
+	The \textbf{Generalized Minimal Residual method (GMRES)} constructs an approximate solution within a Krylov subspace:
+	\begin{equation*}
+		\mathbf x_m=\mathbf x_0+\mathbf z_m,\qquad \mathbf z_m\in\mathcal K_m(\mathbf A,\mathbf r_0),
+	\end{equation*}
+	where $\mathbf r_0=\mathbf b-\mathbf A\mathbf x_0$ is the initial residual. In other words, GMRES looks for corrections to the initial guess $\mathbf x_0$ within the Krylov subspace.
+	
+	\medskip
+	Among all such approximate solutions, GMRES chooses the one that minimises the residual norm:
+	\begin{equation*}
+		\boxed{\mathbf x_m=\underset{\mathbf x\in\mathbf x_0+\mathcal K_m(\mathbf A,\mathbf r_0)}{\operatorname{arg\,min}}\;\|\mathbf b-\mathbf A\mathbf x\|.}
+	\end{equation*}
+	
+	\medskip
+	Thus, GMRES uses the flexibility of the Krylov subspace to find the best approximate solution.
+\end{frame}
+
+\section{Rayleigh--Ritz: solving the eigenvalue problem in a subspace, any subspace}
 
 \begin{frame}
 	We have seen that Krylov subspaces provide a way to generate a collection of vectors, given by $\mathcal K_k(\mathbf A,\mathbf b_0)$. 
