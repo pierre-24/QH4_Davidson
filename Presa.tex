@@ -1,0 +1,129 @@
+\documentclass[10pt,aspectratio=169]{beamer}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{lmodern}
+
+\usetheme[progressbar=frametitle, numbering=fraction,colortheme=paper,block=fill]{moloch}
+
+\usepackage{braket}
+\usepackage{booktabs}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc}
+
+\usepackage{siunitx}
+\DeclareSIUnit \au{a.u.}
+
+\usepackage{mhchem}
+
+\usepackage[backend=biber,style=chem-acs]{biblatex}
+\bibliography{biblio}
+
+\begin{document}
+\author{Dr. Pierre Beaujean}
+\title{Only Getting the Eigenvalues You Really Want}
+\subtitle{The Davidson method}
+\institute{University of Namur}
+\date{Quantum Horizon IV (version of \today)}
+
+\begin{frame}[plain]
+\maketitle
+\end{frame}
+
+\begin{frame}{Table of content}
+	\tableofcontents
+\end{frame}
+
+\section{Why? A few motivations}
+
+\begin{frame}
+	We have just seen that finding the response to an external perturbation $\hat V(\omega)$ requires solving the so-called response equation:
+	\begin{equation*}
+		\left[
+		\begin{pmatrix}
+			\mathbf{A} & \mathbf{B} \\
+			\mathbf{B} & \mathbf{A}
+		\end{pmatrix}
+		- (\omega+i\Gamma)
+		\begin{pmatrix}
+			\mathbf{1} & \mathbf{0} \\
+			\mathbf{0} & -\mathbf{1}
+		\end{pmatrix}
+		\right]
+		\begin{pmatrix}
+			\mathbf{X}_\zeta(\omega) \\
+			\mathbf{Y}_\zeta(\omega)
+		\end{pmatrix}
+		=
+		-\begin{pmatrix}
+			\mathbf{V}_\zeta \\
+			\mathbf{V}_\zeta^\star
+		\end{pmatrix},
+		\label{eq:response}
+	\end{equation*}
+	This is quite similar to the case of a driven harmonic oscillator with a natural frequency $\omega_0=\sqrt{k/m}$:
+	\begin{equation*}
+		\ddot{x}(t) + \underbrace{2\gamma\,\dot{x}(t)}_{\text{damping}} + \omega_0^2\,x(t) = \underbrace{\frac{1}{m}\,f(t)}_{\text{external force}}.
+	\end{equation*}
+	Assuming a harmonic driving force $f(t) = F(\omega)e^{-i\omega t}$ and a steady-state response $x(t)=X(\omega)e^{-i\omega t}$, we obtain:
+	\begin{equation*}
+		(-\omega^2-2i\gamma\omega+\omega_0^2)\,X(\omega) = \frac{1}{m}\,F(\omega) \Leftrightarrow \chi(\omega) = \frac{X(\omega)}{F(\omega)} = \frac{1}{m}\,\frac{1}{\omega_0^2-\omega^2-2i\gamma\omega},
+	\end{equation*}
+	where $\chi(\omega)$ is the susceptibility.
+	Its poles are $\omega_{\pm} = -i\gamma \pm \sqrt{\omega_0^2-\gamma^2}$. These are the complex frequencies of the homogeneous damped oscillator (i.e., when $f(t)=0$). In the absence of damping, they reduce to $\omega_{\pm}=\pm\omega_0$.
+\end{frame}
+
+\begin{frame}
+	Now, consider a set of coupled harmonic oscillators. Assuming $\mathbf{x}(t) = \mathbf{x}\,e^{-i\omega t}$, the homogeneous equations of motion read:
+	\begin{equation*}
+		\mathbf{M}\,\ddot{\mathbf{x}}(t) + \mathbf{K}\mathbf{x}(t) = 0 \Leftrightarrow -\omega^2\,\mathbf{M}\,\mathbf{x} + \mathbf{K}\,\mathbf{x} = 0 \Leftrightarrow \mathbf{K}\,\mathbf{x} = \omega^2\,\mathbf{M}\,\mathbf{x}.
+	\end{equation*}
+	This is nothing but a (generalized) eigenvalue problem, where each eigenpair $(\omega_i^2,\mathbf{x}_i)$ corresponds to a pair of poles at $\omega=\pm\omega_i$ in the frequency-dependent response.
+	The equivalent in the context of TD-DFT is the (in)famous Casida equation:\footfullcite{casidaTimeDependentDensityFunctional1995}
+	\begin{equation}
+		\begin{pmatrix}
+			\mathbf{A} & \mathbf{B} \\
+			\mathbf{B} & \mathbf{A}
+		\end{pmatrix}
+		\begin{pmatrix}
+			\mathbf{X}_m \\
+			\mathbf{Y}_m
+		\end{pmatrix}
+		=\omega_m
+		\begin{pmatrix}
+			\mathbf{1} & \mathbf{0} \\
+			\mathbf{0} & -\mathbf{1}
+		\end{pmatrix}
+		\begin{pmatrix}
+			\mathbf{X}_m \\
+			\mathbf{Y}_m
+		\end{pmatrix},
+		\label{eq:casida}
+	\end{equation}
+	where $\mathbf{X}_m$ and $\mathbf{Y}_m$ are the excitation and de-excitation amplitude vectors associated with excited state $\ket{m}$, whose excitation energy is $\omega_m$.
+	
+	\medskip
+	Now, the question is:
+	\begin{center}
+		\Large How do we find the eigenvalues of this problem?
+	\end{center}
+\end{frame}
+
+\begin{frame}
+	But let's first ask a simpler question:
+	\begin{center}
+		\Large How do we find the eigenvalues of a matrix?
+	\end{center}
+	Well, you all know from Linear Algebra 101\footnote{Probably also called ``kindergarten math'' by Marc} that you need to find the roots of the characteristic polynomial of the matrix.
+	
+	\medskip
+	But:
+	\begin{enumerate}
+		\item How do you explain that to a computer? Finding the roots of a high-degree polynomial is numerically challenging!
+		\item Do you really need \textbf{all} the eigenvalues? In TD-DFT, you are generally interested in only a relatively small number of low-energy valence excitations, typically in the UV--Vis region, so the \textbf{lowest} eigenvalues.
+		\item What if the matrix is so large that it does not fit into your (super)computer's memory? In TD-DFT, the dimension of the Casida matrices is determined by the number of occupied--virtual transitions, $K\times (M-K)$ in closed-shell systems, where $M$ is the total number of molecular orbitals and $K$ is the number of occupied molecular orbitals. This number can become quite large!
+	\end{enumerate}
+\end{frame}
+
+\end{document}
