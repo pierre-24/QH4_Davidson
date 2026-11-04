@@ -2,7 +2,8 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 
-\usepackage{lmodern}
+\usepackage[boxed]{algorithm2e}
+\SetKwComment{Comment}{/* }{ */}
 
 \usetheme[progressbar=frametitle, numbering=fraction,colortheme=paper,block=fill]{moloch}
 
@@ -123,6 +124,327 @@
 		\item How do you explain that to a computer? Finding the roots of a high-degree polynomial is numerically challenging!
 		\item Do you really need \textbf{all} the eigenvalues? In TD-DFT, you are generally interested in only a relatively small number of low-energy valence excitations, typically in the UV--Vis region, so the \textbf{lowest} eigenvalues.
 		\item What if the matrix is so large that it does not fit into your (super)computer's memory? In TD-DFT, the dimension of the Casida matrices is determined by the number of occupied--virtual transitions, $K\times (M-K)$ in closed-shell systems, where $M$ is the total number of molecular orbitals and $K$ is the number of occupied molecular orbitals. This number can become quite large!
+	\end{enumerate}
+\end{frame}
+
+\section{A very simple algorithm: the power iteration}
+
+\begin{frame}
+	The power iteration is a relatively simple algorithm:
+	\begin{algorithm}[H]
+		\SetAlgoLined
+		\KwIn{A diagonalizable $n\times n$ matrix $\mathbf A$, convergence criterion $\varepsilon$}
+		\KwOut{The eigenpair $(\lambda,\mathbf v)$ corresponding to the eigenvalue of $\mathbf A$ with the largest absolute value}
+		$\mathbf b_0 \gets$ a random vector of size $n$\Comment*[r]{An initial estimate can also be used}
+		$k \gets 0$\;
+		\While{$\|\mathbf A\mathbf b_k-\lambda_k\mathbf b_k\|>\varepsilon$}{
+			$\mathbf b_{k+1} \gets \dfrac{\mathbf A\mathbf b_k}{\|\mathbf A\mathbf b_k\|}$ \Comment*{Assuming that $\mathbf A\mathbf b_k\neq \mathbf 0$.}
+			$\lambda_{k+1} \gets R(\mathbf A,\mathbf b_{k+1})$\;
+			$k \gets k+1$\;
+		}
+		\Return{$\lambda_k$, $\mathbf b_k$}\;
+	\end{algorithm}
+	where
+	\begin{equation*}
+		R(\mathbf A,\mathbf b_k) = \frac{\mathbf b_k^\star\mathbf A\mathbf b_k}{\mathbf b_k^\star\mathbf b_k}
+	\end{equation*}
+	is the Rayleigh quotient, which provides an estimate of the eigenvalue associated with $\mathbf b_k$.
+\end{frame}
+
+\begin{frame}
+	Observations: it works, but converges \textbf{slowly} and provides only one eigenvalue (the one with the largest absolute value)!
+	
+	\medskip
+	Why does it work? Notice that, apart from the normalization at each iteration,
+	\begin{equation*}
+		\mathbf b_{k+1}\propto \mathbf A\mathbf b_k \propto \mathbf A(\mathbf A\mathbf b_{k-1}) \propto \ldots \propto \mathbf A^k\mathbf b_0.
+	\end{equation*}
+	Furthermore, assuming that $\mathbf A$ is diagonalizable, its eigenvectors $\{\mathbf v_i\}$ form a basis in which $\mathbf b_0$ can be expressed:
+	\begin{equation*}
+		\mathbf b_0 = \sum_{i=1}^N c_i\,\mathbf v_i.
+	\end{equation*}
+	Therefore, assuming $|\lambda_1|>|\lambda_2|\geq\ldots\geq|\lambda_N|$ and $c_1\neq 0$,
+	\begin{align*}
+		\mathbf A^k \mathbf b_0 &= \sum_{i=1}^N c_i\,\mathbf A^k\mathbf v_i = \sum_{i=1}^N c_i\,\lambda_i^k\,\mathbf v_i= \lambda_1^k\left[c_1\,\mathbf v_1 + \sum_{i=2}^N c_i\left(\frac{\lambda_i}{\lambda_1}\right)^k\mathbf v_i\right].
+	\end{align*}
+	Since $|\lambda_i/\lambda_1|<1$ for all $i>1$, the contributions of all other eigenvectors vanish relative to that of $\mathbf v_1$ as $k\rightarrow\infty$. After normalization, $\mathbf b_k$ therefore converges to $\mathbf v_1$, up to a sign (or, more generally, a phase).
+	Convergence depends on $\left|\frac{\lambda_1}{\lambda_2}\right|^k$, so how close are the eigenvalues.
+\end{frame}
+
+\begin{frame}
+	So, the power iteration repeatedly applies the matrix $\mathbf A$ to an initial vector $\mathbf b_0$:
+	\begin{equation*}
+		\mathbf b_0,\quad \mathbf A\mathbf b_0,\quad \mathbf A^2\mathbf b_0,\quad \ldots,\quad \mathbf A^k\mathbf b_0.
+	\end{equation*}
+	So far, we have only kept the latest vector (except for vizualisation purpose), normalizing it at each iteration. But what if we kept all the vectors generated along the way?
+	
+	\medskip
+	This naturally leads to the definition of a \textbf{Krylov subspace}:
+	\begin{equation*}
+		\boxed{\mathcal K_k(\mathbf A,\mathbf b_0)=\operatorname{span}\left\{\mathbf b_0,\mathbf A\mathbf b_0,\ldots,\mathbf A^{k-1}\mathbf b_0\right\}.}
+	\end{equation*}
+	In other words, instead of looking for an eigenvector along a single direction, we now look for it in a subspace that grows with each iteration, until it eventually reaches its maximum possible dimension.
+\end{frame}
+
+\begin{frame}
+	Why is this interesting? By definition, any vector $\mathbf u$ belonging to the Krylov subspace can be written as a linear combination of its generating vectors:
+	\begin{equation*}
+		\mathbf u=c_0\,\mathbf b_0+c_1\,\mathbf A\mathbf b_0+\ldots+c_{k-1}\,\mathbf A^{k-1}\mathbf b_0.
+	\end{equation*}
+	We can rewrite this expression more compactly using a polynomial:
+	\begin{equation*}
+		\mathbf u=p_{k-1}(\mathbf A)\,\mathbf b_0,\qquad p_{k-1}(\mathbf A)=c_0\,\mathbf I+c_1\,\mathbf A+\ldots+c_{k-1}\,\mathbf A^{k-1}.
+	\end{equation*}
+	Here, $p_{k-1}$ is a polynomial of degree at most $k-1$.
+	For example, in $\mathcal K_3(\mathbf A,\mathbf b_0)$, we can construct:
+	\begin{equation*}
+		\mathbf u=(c_0\,\mathbf I+c_1\,\mathbf A+c_2\,\mathbf A^2)\,\mathbf b_0.
+	\end{equation*}
+	Thus, the Krylov subspace contains all vectors obtained by applying polynomials of degree at most $k-1$ in $\mathbf A$ to the initial vector.
+\end{frame}
+
+\begin{frame}
+	Assume that $\mathbf A$ is diagonalizable, with eigenvectors $\{\mathbf v_i\}$ and eigenvalues $\{\lambda_i\}$. Then, any vector $\mathbf u$ (which can correspond to an eigenvector) is:
+	\begin{equation*}
+		\mathbf u=p_{k-1}(\mathbf A)\,\mathbf b_0=p_{k-1}(\mathbf A)\left[\sum_{i=1}^N c_i\mathbf v_i \right]=\sum_{i=1}^N c_i\,p_{k-1}(\lambda_i)\,\mathbf v_i.
+	\end{equation*}
+	In other words, the polynomial modifies the contribution of each eigenvector through its value at the corresponding eigenvalue!
+	The power iteration uses only the specific polynomial $p_k(\lambda)=\lambda^k$, whereas Krylov subspaces allow us to combine several powers of $\mathbf A$. This gives us more flexibility to amplify the contributions of eigenvectors we are interested in and suppress those of the others.
+	
+	\begin{center}
+		\Large 
+		The question is now: how do we choose the best linear combination in this subspace?
+	\end{center}
+\end{frame}
+
+\section{Rayleigh--Ritz: solving the eigenvalue problem in a subspace}
+
+\begin{frame}
+	We have seen that Krylov subspaces provide a way to generate a collection of vectors, given by $\mathcal K_k(\mathbf A,\mathbf b_0)$. 
+	Now, instead of looking for an eigenvector along a single direction, we can now search for it within this subspace.
+	Let us collect an orthonormal basis of this subspace (obtained using, say, \textbf{Gram--Schmidt}) into a matrix:
+	\begin{equation*}
+		\mathbf Q=(\mathbf q_1,\mathbf q_2,\ldots,\mathbf q_m),\qquad \mathbf Q^\dagger\mathbf Q=\mathbf I_m.
+	\end{equation*}
+	Any vector in the subspace can then be written as:
+	\begin{equation*}
+		\mathbf u=\mathbf Q\mathbf y,
+	\end{equation*}
+	where $\mathbf y$ contains the coefficients of the linear combination.
+	
+	\medskip
+	Our goal is to find approximate eigenvectors of $\mathbf A$ within this subspace. To do so, we first project $\mathbf A$ onto the subspace, defining the \textbf{projected matrix}:
+	\begin{equation*}
+		\boxed{\mathbf H=\mathbf Q^\dagger\mathbf A\mathbf Q.}
+	\end{equation*}
+	This is an $m\times m$ matrix, whereas $\mathbf A$ is $n\times n$, with $m\ll n$.
+\end{frame}
+
+\begin{frame}
+	Recall that an exact eigenpair $(\lambda, \mathbf v)$ would satisfies:
+	\begin{equation*}
+		\mathbf A\mathbf \mathbf v=\lambda\mathbf v.
+	\end{equation*}
+	Within our subspace, we seek an approximate eigenpair $(\theta,\mathbf u)$, with $\mathbf u=\mathbf Q\mathbf y$. The corresponding residual is:
+	\begin{equation*}
+		\mathbf r= A\mathbf u-\theta\mathbf u = \mathbf A\mathbf Q\mathbf y-\theta\mathbf Q\mathbf y.
+	\end{equation*}
+	Since we are restricting ourselves to the subspace spanned by $\mathbf Q$, we cannot generally make the residual vanish. Instead, we impose the \textbf{Galerkin condition}: the residual must be orthogonal to the subspace.
+	\begin{equation*}
+		\mathbf Q^\dagger\mathbf r=\mathbf 0.
+	\end{equation*}
+	Substituting the expression for the residual and using $\mathbf Q^\dagger\mathbf Q=\mathbf I_m$, we obtain:
+	\begin{equation*}
+		\boxed{\mathbf H\mathbf y=\theta\mathbf y.}
+	\end{equation*}
+	We have therefore transformed the original $n\times n$ eigenvalue problem into a much smaller $m\times m$ problem!
+	Solving the reduced eigenvalue problem $\mathbf H\mathbf y_i=\theta_i\mathbf y_i$ gives us approximate eigenpairs of $\mathbf A$ within the chosen subspace.
+\end{frame}
+
+\begin{frame}
+	We can summarize the Rayleigh--Ritz procedure as follows:
+	\begin{enumerate}
+		\item Generate a subspace, for example $\mathcal K_m(\mathbf A,\mathbf b_0)$, and construct an orthonormal basis $\mathbf Q$.
+		\item Compute the action of $\mathbf A$ on the basis vectors:
+		\begin{equation*}
+			\boldsymbol{\sigma}_A=\mathbf A\mathbf Q.
+		\end{equation*}
+		Then construct the projected matrix:
+		\begin{equation*}
+			\mathbf H=\mathbf Q^\dagger\boldsymbol{\sigma}_A.
+		\end{equation*}
+		\item Solve the reduced eigenvalue problem $\mathbf H\mathbf y_i=\theta_i\mathbf y_i$.
+		\item Construct the approximate eigenvectors $\mathbf u_i=\mathbf Q\mathbf y_i$.
+	\end{enumerate}
+	
+	\medskip
+	The eigenvalues $\theta_i$ are called \textbf{Ritz values}, while the vectors $\mathbf u_i$ are called \textbf{Ritz vectors}.
+	
+	\medskip
+	\begin{center}
+		\Large
+		But how do we efficiently expand the subspace to obtain better approximations to the eigenpairs?
+	\end{center}
+\end{frame}
+
+\begin{frame}
+	In passing, notice that the Rayleigh--Ritz procedure only requires the action of $\mathbf A$ on the basis vectors, in order to compute $\boldsymbol{\sigma}_A=\mathbf A\mathbf Q$.
+	
+	\medskip
+	This allows us to adopt a \textbf{matrix-free approach}:
+	\begin{itemize}
+		\item Instead of explicitly constructing and storing the full $n\times n$ matrix, we implement a procedure that directly computes $\mathbf A\mathbf x$ for any input vector $\mathbf x$. Each component is given by:
+		\begin{equation*}
+			(\mathbf A\mathbf x)_j=\sum_{k=1}^n A_{jk}x_k.
+		\end{equation*}
+		If the elements $A_{jk}$ can be computed on the fly, we only need to generate one row of $\mathbf A$ at a time to evaluate the corresponding component.
+		\item We apply this procedure to each basis vector $\mathbf q_i$ to obtain $\boldsymbol{\sigma}_A$.
+	\end{itemize}
+	
+	\medskip
+	This can drastically reduce memory requirements: storing $\mathbf A$ costs $O(n^2)$, whereas storing $\mathbf Q$ and $\boldsymbol{\sigma}_A$ requires only $O(nm)$ memory. This is particularly useful when $\mathbf A$ is very large but its action on a vector can be evaluated efficiently without explicitly assembling the matrix.
+\end{frame}
+
+\section{Davidson: an efficient subspace expansion}
+
+\begin{frame}
+	We have seen that the Rayleigh--Ritz procedure allows us to extract approximate eigenpairs from a given subspace.
+	
+	\medskip
+	However, we still need to decide how to expand this subspace to improve our approximations.
+	One possibility is to use a Krylov subspace, adding successive powers of $\mathbf A$ applied to an initial vector. However, this is not always the most efficient strategy, especially when we are interested in only a few eigenpairs.
+	The \textbf{Davidson algorithm} follows a different strategy: rather than simply adding new powers of $\mathbf A$, it uses the current approximate eigenvectors to determine which directions should be added to the subspace.
+	
+	\medskip
+	Let us consider one of the Ritz pairs $(\theta_i,\mathbf u_i)$ obtained from the Rayleigh--Ritz procedure. Its residual is defined as:
+	\begin{equation*}
+		\mathbf r_i=\mathbf A\mathbf u_i-\theta_i\mathbf u_i.
+	\end{equation*}
+	If $(\theta_i,\mathbf u_i)$ is an exact eigenpair, then $\mathbf r_i=\mathbf 0$. Therefore, the norm of the residual provides a natural measure of how well the approximate eigenpair satisfies the original eigenvalue equation.
+	
+	\medskip
+	We can use it as a convergence criterion: the approximate eigenpair is considered converged when $\|\mathbf r_i\|<\varepsilon$. Otherwise, we need to improve our approximation.
+	
+	\medskip
+	\textbf{But how can we use the residual to find a better approximate eigenvector?}
+\end{frame}
+
+\begin{frame}
+	Let us denote the exact eigenvector associated with the Ritz pair by $\mathbf v_i$. We would like to improve our approximation $\mathbf u_i$ by adding a correction vector $\mathbf t_i$:
+	\begin{equation}
+		\mathbf v_i\approx\mathbf u_i+\mathbf t_i.
+		\label{eq:davidson_vector_correction}
+	\end{equation}
+	
+	Starting from the exact eigenvalue equation, $\mathbf A\mathbf v_i=\lambda_i\mathbf v_i$, and assuming that the Ritz value $\theta_i$ is already a reasonable approximation to $\lambda_i$, we obtain:
+	\begin{equation}
+		(\mathbf A-\theta_i\mathbf I)\,\mathbf v_i\approx\mathbf 0.
+		\label{eq:davidson_approx_eigenvalue}
+	\end{equation}
+	Substituting Eq.~\eqref{eq:davidson_vector_correction} into Eq.~\eqref{eq:davidson_approx_eigenvalue} gives:
+	\begin{equation*}
+		(\mathbf A-\theta_i\mathbf I)(\mathbf u_i+\mathbf t_i)\approx\mathbf 0.
+	\end{equation*}
+	Expanding this expression and using the definition of the residual, $\mathbf r_i=\mathbf A\mathbf u_i-\theta_i\mathbf u_i$, we finally obtain:
+	\begin{equation}
+		\underbrace{(\mathbf A-\theta_i\mathbf I)\,\mathbf u_i}_{\mathbf r_i}+(\mathbf A-\theta_i\mathbf I)\,\mathbf t_i\approx\mathbf 0
+		\quad\Longleftrightarrow\quad
+		(\mathbf A-\theta_i\mathbf I)\,\mathbf t_i\approx-\mathbf r_i.
+		\label{eq:davidson_correction_equation}
+	\end{equation}
+	
+	\medskip
+	In principle, solving Eq.~\eqref{eq:davidson_correction_equation} would provide the desired correction. However, solving it exactly would be almost as difficult as solving the original eigenvalue problem!
+\end{frame}
+
+\begin{frame}
+	Instead of solving Eq.~\eqref{eq:davidson_correction_equation} exactly, Davidson proposed replacing $\mathbf A$ with a much simpler approximation, typically its diagonal part $\mathbf D=\operatorname{diag}(\mathbf A)$. This is particularly effective when the diagonal provides a good approximation to $\mathbf A$.\footnote{This is often the case in TD-DFT!}
+	
+	\medskip
+	The correction equation then becomes:
+	\begin{equation*}
+		(\mathbf D-\theta_i\mathbf I)\,\mathbf t_i=-\mathbf r_i.
+	\end{equation*}
+	Since $\mathbf D$ is diagonal, this can be solved very cheaply, component by component:
+	\begin{equation*}
+		\boxed{(\mathbf t_i)_j=-\frac{(\mathbf r_i)_j}{D_{jj}-\theta_i}.}
+	\end{equation*}
+	
+	\medskip
+	This is the \textbf{Davidson correction}: the residual indicates how the approximate eigenpair fails to satisfy the eigenvalue equation, while the diagonal approximation acts as a preconditioner to improve the correction direction.
+	
+	\medskip
+	Finally, we orthogonalize $\mathbf t_i$ against the existing basis $\mathbf Q$, add the resulting vector to the subspace, and repeat the Rayleigh--Ritz procedure using the expanded subspace.
+\end{frame}
+
+\begin{frame}
+	\textbf{The algorithm:}
+	\begin{algorithm}[H]
+		\SetAlgoLined
+		\KwIn{$\mathbf A\in\mathbb R^{n\times n}$, $N$ the number of requested eigenpairs, $K$ the maximum number of iterations, $\varepsilon_c$ the convergence criterion}
+		\KwOut{The $N$ lowest eigenpairs of $\mathbf A$}
+		$\mathbf Q\in\mathbb R^{n\times l}\gets(\mathbf q_1,\ldots,\mathbf q_l)$\tcp*{$l$ initial orthonormal vectors}
+		$i\gets 0$\;
+		$c\gets 0$\tcp*{Number of converged eigenpairs}
+		\While{$i<K$ \textbf{and} $c<N$}{
+			$\boldsymbol{\sigma}_A\gets\mathbf A\mathbf Q$\tcp*{Apply $\mathbf A$ to the basis vectors}
+			$\mathbf H\gets\mathbf Q^T\boldsymbol{\sigma}_A$\;
+			Solve $\mathbf H\mathbf y_j=\theta_j\mathbf y_j$\;
+			Sort the Ritz values in ascending order and keep the $N$ lowest eigenpairs\;
+			\For{$j\gets1$ \KwTo $N$}{
+				$\mathbf u_j\gets\mathbf Q\mathbf y_j$\tcp*{Construct Ritz vectors}
+			}
+			\tcp{Subspace expension \& termination}
+		}
+	\end{algorithm}
+\end{frame}
+
+\begin{frame}
+	\textbf{Davidson subspace expansion:}
+	\begin{algorithm}[H]
+		\SetAlgoLined
+		\For{$j\gets1$ \KwTo $N$}{
+			$\mathbf r_j\gets\boldsymbol{\sigma}_A\mathbf y_j-\theta_j\mathbf u_j$\tcp*{Compute residual}
+			\eIf{$\|\mathbf r_j\|<\varepsilon_c$}{
+				$c\gets c+1$\tcp*{Ritz pair has converged}
+			}{
+				$\mathbf t_j\gets-(\mathbf D-\theta_j\mathbf I)^{-1}\mathbf r_j$\tcp*{Davidson correction}
+				Orthogonalize $\mathbf t_j$ against the current basis $\mathbf Q$\;
+				\If{$\|\mathbf t_j\|$ is not negligible}{
+					Normalize $\mathbf t_j$\;
+					$\mathbf Q\gets(\mathbf Q\ \mathbf t_j)$\tcp*{Expand the subspace}
+					$l\gets l+1$\;
+				}
+			}
+		}
+	\end{algorithm}
+	
+	\medskip
+	The expanded basis is then used in the next iteration of the Rayleigh--Ritz procedure.
+\end{frame}
+
+\begin{frame}
+	\textbf{Convergence and termination:}
+	\begin{algorithm}[H]
+		\SetAlgoLined
+		\eIf{$c=N$}{
+			\KwRet{$\{(\theta_j,\mathbf u_j)\}_{j=1}^{N}$}\tcp*{All requested eigenpairs have converged}
+		}{
+		$i\gets i+1$\;
+		\eIf{$i=K$}{
+			\KwRet{Failure}\tcp*{Maximum number of iterations reached}
+		}{
+			Continue with the next Rayleigh--Ritz iteration\;
+		}}
+	\end{algorithm}
+	
+	\medskip
+	At each iteration, the algorithm:
+	\begin{enumerate}
+		\item Extracts approximate eigenpairs from the current subspace.
+		\item Checks their residuals to identify converged eigenpairs.
+		\item Uses the Davidson correction to generate new directions for unconverged eigenpairs.
+		\item Expands the subspace and repeats the procedure.
 	\end{enumerate}
 \end{frame}
 
