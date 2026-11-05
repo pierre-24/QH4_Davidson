@@ -1,6 +1,7 @@
 \documentclass[10pt,aspectratio=169]{beamer}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage{lmodern}
 
 \usepackage[boxed]{algorithm2e}
 \SetKwComment{Comment}{/* }{ */}
@@ -469,6 +470,210 @@
 		\item Uses the Davidson correction to generate new directions for unconverged eigenpairs.
 		\item Expands the subspace and repeats the procedure.
 	\end{enumerate}
+\end{frame}
+
+\section{So, at the end of the day, how do we solve the Casida equation?}
+
+\begin{frame}
+	First of all, there is a simpler option: the \textbf{Tamm--Dancoff approximation} (TDA) \footfullcite{hirataTimedependentDensityFunctional1999}, in which the $\mathbf B$ matrix is neglected, i.e., $\mathbf B=\mathbf 0$.\footnote{In the Hartree--Fock framework, the corresponding approximation is known as CIS.}
+	The Casida equation then reduces to an ordinary eigenvalue problem:
+	\begin{equation*}
+		\boxed{\mathbf A\mathbf X_m=\omega_m\mathbf X_m.}
+	\end{equation*}
+	This is a standard Hermitian eigenvalue problem, which can be solved directly using the Davidson algorithm we have just discussed.
+	
+	\medskip
+	The corresponding excited state can be written as:
+	\begin{equation*}
+		\ket{\Psi_m}=\sum_{ia}(\mathbf X_m)_{ia}\ket{\Psi_i^a},
+	\end{equation*}
+	where $\ket{\Psi_i^a}$ denotes a singly excited configuration, obtained by promoting an electron from the occupied orbital $i$ to the virtual orbital $a$. Depending on the spin adaptation, these configurations can be expressed as configuration state functions (CSFs).
+\end{frame}
+
+\begin{frame}
+	What if we want to solve the full Casida equation?
+	Starting from Eq.~\eqref{eq:casida}, let us introduce the sum and difference of the excitation amplitudes:
+	\begin{equation*}
+		\mathbf P_m=\mathbf X_m+\mathbf Y_m,\qquad
+		\mathbf Q_m=\mathbf X_m-\mathbf Y_m.
+	\end{equation*}
+	The Casida equation [Eq.~\eqref{eq:casida}] can then be rewritten as:
+	\begin{equation*}
+		\begin{pmatrix}
+			\mathbf A+\mathbf B & \mathbf 0\\
+			\mathbf 0 & \mathbf A-\mathbf B
+		\end{pmatrix}
+		\begin{pmatrix}
+			\mathbf P_m\\
+			\mathbf Q_m
+		\end{pmatrix}
+		=
+		\omega_m
+		\begin{pmatrix}
+			\mathbf 0 & \mathbf I\\
+			\mathbf I & \mathbf 0
+		\end{pmatrix}
+		\begin{pmatrix}
+			\mathbf P_m\\
+			\mathbf Q_m
+		\end{pmatrix}.
+	\end{equation*}
+	This gives us the two coupled equations:
+	\begin{equation*}
+		\begin{cases}
+			(\mathbf A+\mathbf B)\,\mathbf P_m=\omega_m\mathbf Q_m,\\
+			(\mathbf A-\mathbf B)\,\mathbf Q_m=\omega_m\mathbf P_m.
+		\end{cases}
+	\end{equation*}
+	
+	\medskip
+	We can eliminate $\mathbf Q_m$ by substituting the second equation into the first:
+	\begin{equation*}
+		(\mathbf A-\mathbf B)(\mathbf A+\mathbf B)\,\mathbf P_m=\omega_m^2\,\mathbf P_m.
+	\end{equation*}
+	We have therefore obtained an ordinary eigenvalue problem for the squared excitation energies (compare that to our coupled harmonic oscillators in the first section!). 
+	However, the matrix on the left-hand side is not generally Hermitian!
+\end{frame}
+
+\begin{frame}
+	We can overcome this problem by introducing a transformed vector:
+	\begin{equation*}
+		\mathbf z_m=(\mathbf A-\mathbf B)^{-1/2}\mathbf P_m.
+	\end{equation*}
+	Assuming that $\mathbf A-\mathbf B$ is positive definite, we can transform the eigenvalue problem into:
+	\begin{equation*}
+		\boxed{
+			\left[(\mathbf A-\mathbf B)^{1/2}(\mathbf A+\mathbf B)(\mathbf A-\mathbf B)^{1/2}\right]\mathbf z_m
+			=\omega_m^2\mathbf z_m.
+		}
+	\end{equation*}
+	The matrix is now Hermitian, and we can use standard Hermitian eigensolvers to obtain the squared excitation energies.
+	
+	\medskip
+	The eigenvalues $\lambda_m = \omega_m^2$ are non-negative for a stable reference state, and each positive eigenvalue gives an excitation energy $\omega_m=\sqrt{\lambda_m}$ (they comes in pair, but we only care about $\omega_m > 0$).
+	Once these and the eigenvectors are known, we can recover the original amplitudes:
+	\begin{equation*}
+		\begin{cases}
+			\mathbf P_m=(\mathbf A-\mathbf B)^{1/2}\,\mathbf z_m,\\
+			\mathbf Q_m=\dfrac{1}{\omega_m}(\mathbf A+\mathbf B)\mathbf P_m,
+		\end{cases}
+	\end{equation*}
+	
+	\medskip
+	There is, however, a computational difficulty: applying this transformation requires $(\mathbf A-\mathbf B)^{1/2}$, which is not straightforward for large matrices.
+\end{frame}
+
+\begin{frame}
+	Alternatively, we can tackle the full Casida equation directly using a \textbf{generalized Davidson algorithm}.
+	Recall that, after introducing $\mathbf P_m=\mathbf X_m+\mathbf Y_m$ and $\mathbf Q_m=\mathbf X_m-\mathbf Y_m$, we obtain:
+	\begin{equation*}
+		\underbrace{
+			\begin{pmatrix}
+				\mathbf A+\mathbf B & \mathbf 0\\
+				\mathbf 0 & \mathbf A-\mathbf B
+			\end{pmatrix}
+		}_{\mathbf E^{[2]}}
+		\begin{pmatrix}
+			\mathbf P_m\\
+			\mathbf Q_m
+		\end{pmatrix}
+		=
+		\omega_m
+		\underbrace{
+			\begin{pmatrix}
+				\mathbf 0 & \mathbf I\\
+				\mathbf I & \mathbf 0
+			\end{pmatrix}
+		}_{\mathbf S^{[2]}}
+		\begin{pmatrix}
+			\mathbf P_m\\
+			\mathbf Q_m
+		\end{pmatrix}.
+	\end{equation*}
+	
+	We can apply the same subspace projection strategy as before. Let $\mathbf V$ be an orthonormal basis of our trial subspace. We first compute the action of the two matrices on this basis:
+	\begin{equation*}
+		\boldsymbol{\sigma}_E=\mathbf E^{[2]}\mathbf V,
+		\qquad
+		\boldsymbol{\sigma}_S=\mathbf S^{[2]}\mathbf V.
+	\end{equation*}
+	We then construct the projected matrices:
+	\begin{equation*}
+		\mathbf E_V=\mathbf V^T\boldsymbol{\sigma}_E,
+		\qquad
+		\mathbf S_V=\mathbf V^T\boldsymbol{\sigma}_S.
+	\end{equation*}
+	
+	Finally, we obtain the reduced generalized eigenvalue problem:
+	\begin{equation*}
+		\boxed{\mathbf E_V\mathbf u_i=\theta_i\mathbf S_V\mathbf u_i,}
+	\end{equation*}
+	which can be solved using a standard LAPACK routine for generalized eigenvalue problems.
+	We then use the Davidson procedure to expand the subspace $\mathbf V$ and repeat the process until convergence.
+\end{frame}
+
+\begin{frame}
+	\textbf{Some technical details:}
+	\begin{itemize}
+		\item The residual, accounting for the metric $\mathbf S^{[2]}$, is computed as: $
+			\mathbf r_i=\boldsymbol{\sigma}_E\mathbf u_i-\theta_i\boldsymbol{\sigma}_S\mathbf u_i$.
+		\item The residuals of all targeted eigenpairs can be collected into a single matrix $\mathbf R$. We can then use its Frobenius norm, $\|\mathbf R\|_F$, as a global convergence criterion.\footfullcite{furcheAcceleratingMolecularProperty2016}
+		
+		\item Particular care must be taken to maintain the orthogonality of the basis vectors in $\mathbf V$. In practice, reorthogonalization may be necessary to avoid numerical loss of orthogonality.
+		
+		\item A \textbf{restart mechanism} can be employed to limit the size of the subspace and improve numerical stability. When its dimension $m$ exceeds a predefined threshold $L$, we retain the most relevant approximate eigenvectors and discard the remaining directions. One way to do this is to perform an SVD of the matrix $\mathbf X$ containing the Ritz vectors to be retained:
+		\begin{equation*}
+			\mathbf X=\mathbf U\boldsymbol{\Sigma}\mathbf W^T.
+		\end{equation*}
+		The new basis is then constructed from the first $L'$ left singular vectors: $\mathbf V\gets(\mathbf u_1,\mathbf u_2,\ldots,\mathbf u_{L'})$, where $L'<L$ is the restart dimension.
+	\end{itemize}
+	
+	\medskip
+	This is the approach implemented in \texttt{pstdlite}.
+\end{frame}
+
+\begin{frame}
+	To handle large matrices, we can distribute their storage and the associated matrix operations over multiple MPI processes (four in this example):\begin{center}
+		\begin{tikzpicture}[scale=1.1]
+			
+			\draw (0,0) rectangle +(4, 4);
+			\draw[fill=gray!25] (2,0) rectangle +(2,2);
+			\draw[fill=gray!25]  (0,2) rectangle +(2,2);
+			
+			\fill[gray] (0,3) rectangle +(2,.5);
+			
+			\fill[gray] (2,1) rectangle +(2,.5);
+			
+			\fill[gray] (7,3) rectangle +(.5,.5);
+			
+			\fill[gray] (7,1) rectangle +(.5,.5);
+			
+			\draw (1,3) node[rotate=45]{\LARGE $\mathbf A+\mathbf B$};
+			
+			\draw (3,1) node[rotate=45]{\LARGE $\mathbf A-\mathbf B$};
+			
+			\foreach \i in {1, 2, 3,4}{
+				\draw[dashed] (0,2 + \i * .5) -- +(2,0);
+				\draw[dashed] (2,\i * .5) -- +(2,0);
+				
+				\draw[dashed] (7,2 + \i * .5) -- +(.5,0);
+				\draw[dashed] (7,\i * .5) -- +(.5,0);
+			}
+			
+			\draw[fill=gray] (5,0) rectangle +(.5, 4);
+			\draw (7,0) rectangle +(.5, 4);
+			
+			\draw (2,-.5) node{$\mathbf E^{[2]}\in\mathbb{R}^{2N_{\text{CSFs}}\times2N_{\text{CSFs}}}$};
+			\draw (5.25,-.5) node{$\mathbf V\in\mathbb{R}^{2N_{\text{CSFs}}\times m}$};
+			\draw (7.25,-.5) node{$\sigma_E\in\mathbb{R}^{2N_{\text{CSFs}}\times m}$};
+			\draw (4.5,2) node{\Large$\times$};
+			\draw (6.25,2) node{\Large$=$};
+		\end{tikzpicture}
+	\end{center}
+	Each process stores and operates on 2 $( N_{\text{CSFs}} / 4 \times N_{\text{CSFs}})$ part of the matrices, reducing the memory requirement per process and allowing the matrix multiplication to be performed in parallel.
+	
+	\medskip
+	Alternatively, one could adopt a \textbf{matrix-free approach}, avoiding the explicit storage of $\mathbf E^{[2]}$. However, this requires an efficient implementation of its action on the trial vectors.
 \end{frame}
 
 \end{document}
