@@ -541,12 +541,12 @@
 		\mathbf z_m=(\mathbf A-\mathbf B)^{-1/2}\mathbf P_m.
 	\end{equation*}
 	Assuming that $\mathbf A-\mathbf B$ is positive definite, we can transform the eigenvalue problem into:
-	\begin{equation*}
+	\begin{equation}
 		\boxed{
 			\left[(\mathbf A-\mathbf B)^{1/2}(\mathbf A+\mathbf B)(\mathbf A-\mathbf B)^{1/2}\right]\mathbf z_m
-			=\omega_m^2\mathbf z_m.
-		}
-	\end{equation*}
+			=\omega_m^2\,\mathbf z_m.
+		} \label{eq:casida-x}
+	\end{equation}
 	The matrix is now Hermitian, and we can use standard Hermitian eigensolvers to obtain the squared excitation energies.
 	
 	\medskip
@@ -605,9 +605,9 @@
 	\end{equation*}
 	
 	Finally, we obtain the reduced generalized eigenvalue problem:
-	\begin{equation*}
-		\boxed{\mathbf E_V\mathbf u_i=\theta_i\mathbf S_V\mathbf u_i,}
-	\end{equation*}
+	\begin{equation}
+		\boxed{\mathbf E_V\mathbf u_i=\theta_i\mathbf S_V\mathbf u_i,} \label{eq:generalized_davidson}
+	\end{equation}
 	which can be solved using a standard LAPACK routine for generalized eigenvalue problems.
 	We then use the Davidson procedure to expand the subspace $\mathbf V$ and repeat the process until convergence.
 \end{frame}
@@ -674,6 +674,76 @@
 	
 	\medskip
 	Alternatively, one could adopt a \textbf{matrix-free approach}, avoiding the explicit storage of $\mathbf E^{[2]}$. However, this requires an efficient implementation of its action on the trial vectors.
+\end{frame}
+
+\begin{frame}
+	\begin{figure}
+	\begin{columns}
+		\column{.7\linewidth}
+		\includegraphics[width=\linewidth]{bench}
+		\column{.3\linewidth}
+		\caption{Computational time required to obtain 100 excitation energies and their corresponding excitation vectors for carbo[11]helicene (73 atoms), using either the Hermitian form of the Casida equation [Eq.~\eqref{eq:casida-x}] or the generalized Davidson algorithm [Eq.~\eqref{eq:generalized_davidson}]. The bottom axis shows the number of OpenMP threads, while the top axis shows the number of MPI processes (using one MPI process per node, with 128 OpenMP threads per process).}
+	\end{columns}
+\end{figure}
+\end{frame}
+
+\begin{frame}
+	\begin{figure}
+		\includegraphics[width=.9\linewidth]{impact_threshold}
+		\caption{Impact of the threshold $\varepsilon_C$ (\numrange{e-1}{e-4}) on the ECD spectrum (left) and on the number of Davidson iterations (right) for 1L2Y, a Trp-cage protein comprising 20 amino acids and 154 atoms, with 300 roots. Red arrows indicate restarts, while the arrows for each $\varepsilon_C$ indicate the mean absolute deviation (MAD) in the excitation energies.}
+	\end{figure}
+\end{frame}
+
+\section{Conclusions and outlook}
+
+\begin{frame}
+	The Davidson algorithm, originally developed in the context of quantum chemistry, makes particularly good use of the structure of the Casida equation:
+	\begin{itemize}
+		\item It relies on the Rayleigh--Ritz procedure to extract approximate eigenpairs from a relatively small subspace, thereby reducing the computational cost.
+		\item It expands the subspace efficiently by exploiting the approximate diagonality of $\mathbf A\pm\mathbf B$ through a diagonal preconditioner.
+		\item Its structure offers flexibility in how the matrices and subspace vectors are stored and manipulated, including distributed storage and matrix-free implementations, as demonstrated, for example, in Turbomole.\footfullcite{furcheAcceleratingMolecularProperty2016}
+	\end{itemize}
+	
+	\medskip
+	Related Davidson-type methods can also be used to solve linear systems, $\mathbf A\mathbf x=\mathbf b$. In particular, the Davidson--Liu approach provides a subspace framework for solving linear equations, which can also be useful in the context of linear-response calculations.
+\end{frame}
+
+\begin{frame}
+	Of course, several clever ideas have been developed to improve these algorithms even further:
+	\begin{itemize}
+		\item Furche \textit{et al.}\footfullcite{furcheAcceleratingMolecularProperty2016} describe an approach based on a non-orthogonal set of trial vectors $\mathbf V$, which can simplify parts of the implementation.
+		
+		\item Olsen \textit{et al.}\footfullcite{olsenSolutionLargeMatrix1988} showed that if $(\mathbf X_m\quad \mathbf Y_m)^T$ is an eigenvector associated with $\omega_m$, then $(\mathbf Y_m\quad \mathbf X_m)^T$ is an eigenvector associated with $-\omega_m$.
+		This symmetry can be exploited to construct the trial subspace more efficiently, using two related subspaces.
+		This idea was incorporated into the algorithms implemented in Dalton.\footfullcite{kauczorEfficiencyAlgorithmsSolving2011}
+		
+		\item More sophisticated preconditioners are also available.\footfullcite{vecharynskiEfficientBlockPreconditioned2017}
+		And, as a side note, simplified TD-DFT (sTD-DFT) is another approach to accelerating excited-state calculations!\footfullcite{zhouAcceleratingMolecularProperty2021}
+	\end{itemize}
+\end{frame}
+
+\begin{frame}
+	
+	\begin{center}
+		
+		{\LARGE Thanks to:} \\
+		\vspace*{1cm}
+		
+		\includegraphics[width=.1\textwidth]{unamur_logo}
+		\hspace{.2cm}
+		\includegraphics[width=.12\textwidth]{LCT_logo}
+		\hspace{.2cm}
+		\includegraphics[width=.2\textwidth]{nism}
+		\hspace{.2cm}
+		\includegraphics[width=.3\textwidth]{ceci}\\
+		\vspace{1cm}
+		
+		{\LARGE And thank you all for your attention!}
+		
+		\vspace{1cm}
+		\url{https://pierrebeaujean.net}  $\bullet$ \url{@pierrebeaujean.eurosky.social}
+		
+	\end{center}
 \end{frame}
 
 \end{document}
