@@ -37,6 +37,15 @@
 	\tableofcontents
 \end{frame}
 
+\begin{frame}{A few references}
+	These references were used to prepare this presentation:
+	\begin{itemize}
+		\item {} [\fullcite{casidaTimeDependentDensityFunctional1995}]: useful for understanding the Casida equation, but less so for its practical implementation.
+		\item {} [\fullcite{saadNumericalMethodsLarge2011}]: an excellent general reference on numerical methods for solving eigenvalue problems, covering both the fundamentals and practical algorithms.
+		\item {} [\fullcite{furcheAcceleratingMolecularProperty2016}] and [\fullcite{kauczorEfficiencyAlgorithmsSolving2011}]: two papers discussing the implementation of Davidson-type algorithms for solving the Casida equation. Both are particularly useful!
+	\end{itemize}
+\end{frame}
+
 \section{Why? A few motivations}
 
 \begin{frame}
@@ -104,6 +113,7 @@
 		\label{eq:casida}
 	\end{equation}
 	where $\mathbf{X}_m$ and $\mathbf{Y}_m$ are the excitation and de-excitation amplitude vectors associated with excited state $\ket{m}$, whose excitation energy is $\omega_m$.
+	Notice that this is actually a \textbf{symplectic} eigenvalue problem (the eigenvalues also come in pairs).
 	
 	\medskip
 	Now, the question is:
@@ -538,7 +548,7 @@
 \begin{frame}
 	We can overcome this problem by introducing a transformed vector:
 	\begin{equation*}
-		\mathbf z_m=(\mathbf A-\mathbf B)^{-1/2}\mathbf P_m.
+		\mathbf P_m=(\mathbf A-\mathbf B)^{1/2}\,\mathbf z_m.
 	\end{equation*}
 	Assuming that $\mathbf A-\mathbf B$ is positive definite, we can transform the eigenvalue problem into:
 	\begin{equation}
@@ -554,13 +564,35 @@
 	Once these and the eigenvectors are known, we can recover the original amplitudes:
 	\begin{equation*}
 		\begin{cases}
-			\mathbf P_m=(\mathbf A-\mathbf B)^{1/2}\,\mathbf z_m,\\
+			\mathbf P_m=\dfrac{1}{\sqrt{\omega_m}}(\mathbf A-\mathbf B)^{1/2}\,\mathbf z_m,\\
 			\mathbf Q_m=\dfrac{1}{\omega_m}(\mathbf A+\mathbf B)\mathbf P_m,
 		\end{cases}
 	\end{equation*}
 	
 	\medskip
 	There is, however, a computational difficulty: applying this transformation requires $(\mathbf A-\mathbf B)^{1/2}$, which is not straightforward for large matrices.
+\end{frame}
+
+\begin{frame}
+	That being said, as discussed by Furche et al.\footfullcite{furcheAcceleratingMolecularProperty2016}, we do not necessarily need to compute the matrix square root explicitly.
+	Instead, we can use a matrix factorization of $\mathbf A-\mathbf B$. In particular, if
+	\begin{equation*}
+		\mathbf G\mathbf G^T=\mathbf A-\mathbf B,
+	\end{equation*}
+	for example, using a Cholesky decomposition (since $\mathbf A -\mathbf B$ is positive definite), we obtain the symmetric eigenvalue problem:
+	\begin{equation*}
+		\boxed{\mathbf M\mathbf z_m=\omega_m^2\mathbf z_m,\qquad
+			\mathbf M=\mathbf G^T(\mathbf A+\mathbf B)\mathbf G.}
+	\end{equation*}
+	
+	\medskip
+	The original amplitudes can then be recovered as:
+	\begin{equation*}
+		\begin{cases}
+			\mathbf P_m=\dfrac{1}{\sqrt{\omega_m}}\mathbf G\mathbf z_m,\\
+			\mathbf Q_m=\dfrac{1}{\omega_m}(\mathbf A+\mathbf B)\mathbf P_m = \sqrt{\omega_m}\,\mathbf G^{-T}\mathbf z_m.
+		\end{cases}
+	\end{equation*}
 \end{frame}
 
 \begin{frame}
@@ -590,7 +622,6 @@
 			\mathbf Q_m
 		\end{pmatrix}.
 	\end{equation*}
-	
 	We can apply the same subspace projection strategy as before. Let $\mathbf V$ be an orthonormal basis of our trial subspace. We first compute the action of the two matrices on this basis:
 	\begin{equation*}
 		\boldsymbol{\sigma}_E=\mathbf E^{[2]}\mathbf V,
@@ -608,7 +639,7 @@
 	\begin{equation}
 		\boxed{\mathbf E_V\mathbf u_i=\theta_i\mathbf S_V\mathbf u_i,} \label{eq:generalized_davidson}
 	\end{equation}
-	which can be solved using a standard LAPACK routine for generalized eigenvalue problems.
+	which can be solved using a standard LAPACK routine for generalized eigenvalue problems (or the approach we just saw, applied in the subspace).
 	We then use the Davidson procedure to expand the subspace $\mathbf V$ and repeat the process until convergence.
 \end{frame}
 
@@ -711,14 +742,14 @@
 \begin{frame}
 	Of course, several clever ideas have been developed to improve these algorithms even further:
 	\begin{itemize}
-		\item Furche \textit{et al.}\footfullcite{furcheAcceleratingMolecularProperty2016} describe an approach based on a non-orthogonal set of trial vectors $\mathbf V$, which can simplify parts of the implementation.
+		\item Furche \textit{et al.}\footfullcite{furcheAcceleratingMolecularProperty2016} describe an approach based on a non-orthogonal set of trial vectors $\mathbf V$, which can simplify parts of the implementation, probably used in Turbomole.
 		
 		\item Olsen \textit{et al.}\footfullcite{olsenSolutionLargeMatrix1988} showed that if $(\mathbf X_m\quad \mathbf Y_m)^T$ is an eigenvector associated with $\omega_m$, then $(\mathbf Y_m\quad \mathbf X_m)^T$ is an eigenvector associated with $-\omega_m$.
 		This symmetry can be exploited to construct the trial subspace more efficiently, using two related subspaces.
 		This idea was incorporated into the algorithms implemented in Dalton.\footfullcite{kauczorEfficiencyAlgorithmsSolving2011}
 		
 		\item More sophisticated preconditioners are also available.\footfullcite{vecharynskiEfficientBlockPreconditioned2017}
-		And, as a side note, simplified TD-DFT (sTD-DFT) is another approach to accelerating excited-state calculations!\footfullcite{zhouAcceleratingMolecularProperty2021}
+		And, as a side note, simplified sTD-DFT is another approach to accelerating excited-state calculations!\footfullcite{zhouAcceleratingMolecularProperty2021}
 	\end{itemize}
 \end{frame}
 
