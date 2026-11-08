@@ -498,7 +498,7 @@
 \section{So, at the end of the day, how do we solve the Casida equation?}
 
 \begin{frame}
-	First of all, there is a simpler option: the \textbf{Tamm--Dancoff approximation} (TDA) \footfullcite{hirataTimedependentDensityFunctional1999}, in which the $\mathbf B$ matrix is neglected, i.e., $\mathbf B=\mathbf 0$.\footnote{In the Hartree--Fock framework, the corresponding approximation is known as CIS.}
+	First of all, there is a simpler option: the \textbf{Tamm--Dancoff approximation} (TDA) \footfullcite{hirataTimedependentDensityFunctional1999}, in which the coupling between the excitation and de-excitation channels is neglected, i.e., $\mathbf B=\mathbf 0$.\footnote{In the Hartree--Fock framework, the corresponding approximation is known as CIS.}
 	The Casida equation then reduces to an ordinary eigenvalue problem:
 	\begin{equation*}
 		\boxed{\mathbf A\mathbf X_m=\omega_m\mathbf X_m.}
@@ -506,11 +506,29 @@
 	This is a standard Hermitian eigenvalue problem, which can be solved directly using the Davidson algorithm we have just discussed.
 	
 	\medskip
-	The corresponding excited state can be written as:
+	The vector $\mathbf X_m$ contains the amplitudes associated with occupied-to-virtual transitions:
 	\begin{equation*}
-		\ket{\Psi_m}=\sum_{ia}(\mathbf X_m)_{ia}\ket{\Psi_i^a},
+		\ket{\Psi_m^{\mathrm{CIS}}}=\sum_{ia}(\mathbf X_m)_{ia}\ket{\Psi_i^a},
 	\end{equation*}
-	where $\ket{\Psi_i^a}$ denotes a singly excited configuration, obtained by promoting an electron from the occupied orbital $i$ to the virtual orbital $a$. Depending on the spin adaptation, these configurations can be expressed as configuration state functions (CSFs).
+	where $\ket{\Psi_i^a}$ denotes a singly excited configuration, obtained by promoting an electron from the occupied orbital $i$ to the virtual orbital $a$. 
+	Depending on the spin adaptation, these configurations can be expressed as configuration state functions (CSFs).
+\end{frame}
+
+\begin{frame}
+	Neglecting $\mathbf B$, however, comes at a cost. This matrix couples the so-called excitation vector $\mathbf X_m$ and de-excitation vector $\mathbf Y_m$.
+	
+	\medskip
+	While $\mathbf X_m$ describes the forward response, associated with occupied-to-virtual transitions ($i\to a$), $\mathbf Y_m$ describes the backward response, associated with virtual-to-occupied transitions ($a\to i$).
+	The latter therefore contributes to \textbf{orbital relaxation}.
+	For a stable reference state, the full Casida eigenvectors are usually normalized according to:
+	\begin{equation*}
+		\|\mathbf X_m\|^2-\|\mathbf Y_m\|^2=1.
+	\end{equation*}
+	In many practical applications, $\|\mathbf Y_m\|\ll\|\mathbf X_m\|$. This helps explain why neglecting the de-excitation amplitudes can often be a reasonable approximation, although the TDA can still affect excitation energies (generally over-estimated) and properties derived from the transition density matrix (1-TDM), such as particle--hole distances.
+	
+	\medskip
+	Some authors\footfullcite{plasserMeaningDeExcitationsTimeDependent2025} go even further, interpreting the $\mathbf Y$ vector as a ``manifestation of ground-state correlation''.
+	If you want to go in that rabbit hole, feel free to contact Tarcius and me.
 \end{frame}
 
 \begin{frame}
