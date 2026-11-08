@@ -482,6 +482,19 @@
 	\end{enumerate}
 \end{frame}
 
+\begin{frame}
+	Notice that, at each iteration, we compute the action of $\mathbf A$ on the current basis:
+	\begin{equation*}
+		\boldsymbol{\sigma}_A=\mathbf A\mathbf Q.
+	\end{equation*}
+	This is also a key operation in Krylov-subspace methods, where the subspace is expanded using successive applications of $\mathbf A$.
+	Thus, the Davidson approach is, in spirit, a Krylov subspace approach.
+	
+	\medskip
+	However, Davidson follows a different strategy: instead of adding powers of $\mathbf A$ applied to an initial vector, it uses the preconditioned residuals of the current approximate eigenpairs to generate new directions.
+	Thus, Davidson shares the subspace-based framework of Krylov methods, but uses a more targeted strategy to expand the subspace.
+\end{frame}
+
 \section{So, at the end of the day, how do we solve the Casida equation?}
 
 \begin{frame}
@@ -721,7 +734,9 @@
 \begin{frame}
 	\begin{figure}
 		\includegraphics[width=.9\linewidth]{impact_threshold}
-		\caption{Impact of the threshold $\varepsilon_C$ (\numrange{e-1}{e-4}) on the ECD spectrum (left) and on the number of Davidson iterations (right) for 1L2Y, a Trp-cage protein comprising 20 amino acids and 154 atoms, with 300 roots. Red arrows indicate restarts, while the arrows for each $\varepsilon_C$ indicate the mean absolute deviation (MAD) in the excitation energies.}
+		\caption{Impact of the threshold $\varepsilon_C$ (\numrange{e-1}{e-4}) on the ECD spectrum (left) and on the number of Davidson iterations (right) for 1L2Y, a Trp-cage protein comprising 20 amino acids and 154 atoms. 
+		300 excitation energies are requested.
+		Red arrows indicate restarts, while the arrows for each $\varepsilon_C$ indicate the mean absolute deviation (MAD) in the excitation energies.}
 	\end{figure}
 \end{frame}
 
@@ -742,11 +757,11 @@
 \begin{frame}
 	Of course, several clever ideas have been developed to improve these algorithms even further:
 	\begin{itemize}
-		\item Furche \textit{et al.}\footfullcite{furcheAcceleratingMolecularProperty2016} describe an approach based on a non-orthogonal set of trial vectors $\mathbf V$, which can simplify parts of the implementation, probably used in Turbomole.
+		\item Furche \textit{et al.}\footfullcite{furcheAcceleratingMolecularProperty2016} describe an approach based on a non-orthogonal set of trial vectors $\mathbf V$, which can simplify parts of the implementation, used in Turbomole.
 		
 		\item Olsen \textit{et al.}\footfullcite{olsenSolutionLargeMatrix1988} showed that if $(\mathbf X_m\quad \mathbf Y_m)^T$ is an eigenvector associated with $\omega_m$, then $(\mathbf Y_m\quad \mathbf X_m)^T$ is an eigenvector associated with $-\omega_m$.
 		This symmetry can be exploited to construct the trial subspace more efficiently, using two related subspaces.
-		This idea was incorporated into the algorithms implemented in Dalton.\footfullcite{kauczorEfficiencyAlgorithmsSolving2011}
+		This idea was incorporated into the algorithms implemented in Dalton\footfullcite{kauczorEfficiencyAlgorithmsSolving2011} and in Turbomole.
 		
 		\item More sophisticated preconditioners are also available.\footfullcite{vecharynskiEfficientBlockPreconditioned2017}
 		And, as a side note, simplified sTD-DFT is another approach to accelerating excited-state calculations!\footfullcite{zhouAcceleratingMolecularProperty2021}
