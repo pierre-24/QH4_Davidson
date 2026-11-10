@@ -179,7 +179,7 @@
 		\mathbf A^k \mathbf b_0 &= \sum_{i=1}^N c_i\,\mathbf A^k\mathbf v_i = \sum_{i=1}^N c_i\,\lambda_i^k\,\mathbf v_i= \lambda_1^k\left[c_1\,\mathbf v_1 + \sum_{i=2}^N c_i\left(\frac{\lambda_i}{\lambda_1}\right)^k\mathbf v_i\right].
 	\end{align*}
 	Since $|\lambda_i/\lambda_1|<1$ for all $i>1$, the contributions of all other eigenvectors vanish relative to that of $\mathbf v_1$ as $k\rightarrow\infty$. After normalization, $\mathbf b_k$ therefore converges to $\mathbf v_1$, up to a sign (or, more generally, a phase).
-	Convergence depends on $\left|\frac{\lambda_1}{\lambda_2}\right|^k$, so how close are the eigenvalues.
+	Convergence depends on $\left|\frac{\lambda_2}{\lambda_1}\right|^k$, so how close are the eigenvalues.
 \end{frame}
 
 \begin{frame}
@@ -741,7 +741,7 @@
 		\column{.7\linewidth}
 		\includegraphics[width=\linewidth]{bench}
 		\column{.3\linewidth}
-		\caption{Computational time required to obtain 100 excitation energies and their corresponding excitation vectors for carbo[11]helicene (73 atoms), using either the Hermitian form of the Casida equation [Eq.~\eqref{eq:casida-x}] or the generalized Davidson algorithm [Eq.~\eqref{eq:generalized_davidson}]. The bottom axis shows the number of OpenMP threads, while the top axis shows the number of MPI processes (using one MPI process per node, with 128 OpenMP threads per process).}
+		\caption{Computational time required to obtain 100 excitation energies and their corresponding excitation vectors for carbo[11]helicene (73 atoms, $N_{\text{CSFs}}=\num{33124}$), using either the Hermitian form of the Casida equation [Eq.~\eqref{eq:casida-x}] or the generalized Davidson algorithm [Eq.~\eqref{eq:generalized_davidson}]. The bottom axis shows the number of OpenMP threads, while the top axis shows the number of MPI processes (using one MPI process per node, with 128 OpenMP threads per process).}
 	\end{columns}
 \end{figure}
 \end{frame}
@@ -749,7 +749,7 @@
 \begin{frame}
 	\begin{figure}
 		\includegraphics[width=.9\linewidth]{impact_threshold}
-		\caption{Impact of the threshold $\varepsilon_C$ (\numrange{e-1}{e-4}) on the ECD spectrum (left) and on the number of Davidson iterations (right) for 1L2Y, a Trp-cage protein comprising 20 amino acids and 154 atoms. 
+		\caption{Impact of the threshold $\varepsilon_C$ (\numrange{e-1}{e-4}) on the ECD spectrum (left) and on the number of Davidson iterations (right) for 1L2Y, a Trp-cage protein comprising 20 amino acids (304 atoms, $N_{\text{CSFs}}=\num{54439}$). 
 		300 excitation energies are requested.
 		Red arrows indicate restarts, while the arrows for each $\varepsilon_C$ indicate the mean absolute deviation (MAD) in the excitation energies.}
 	\end{figure}
