@@ -165,6 +165,7 @@
 		\rho(\mathbf A,\mathbf b_k) = \frac{\mathbf b_k^\star\mathbf A\mathbf b_k}{\mathbf b_k^\star\mathbf b_k}
 	\end{equation*}
 	is the Rayleigh quotient, which provides an estimate of the eigenvalue associated with $\mathbf b_k$.
+	Notice that we introduced the residual $r_k = \|\mathbf A\mathbf b_k-\lambda_k\mathbf b_k\|$.
 \end{frame}
 
 \begin{frame}
@@ -295,6 +296,7 @@
 	\begin{equation*}
 		\mathbf Q^\dagger\mathbf r=\mathbf 0.
 	\end{equation*}
+	\pause
 	Substituting the expression for the residual and using $\mathbf Q^\dagger\mathbf Q=\mathbf I_m$, we obtain:
 	\begin{equation*}
 		\boxed{\mathbf H\mathbf y=\theta\mathbf y.}
