@@ -554,6 +554,7 @@
 		\mathbf P_m=\mathbf X_m+\mathbf Y_m,\qquad
 		\mathbf Q_m=\mathbf X_m-\mathbf Y_m.
 	\end{equation*}
+	\pause
 	The Casida equation [Eq.~\eqref{eq:casida}] can then be rewritten as:
 	\begin{equation*}
 		\begin{pmatrix}
@@ -700,10 +701,11 @@
 	\begin{itemize}
 		\item The residual, accounting for the metric $\mathbf S^{[2]}$, is computed as: $
 			\mathbf r_i=\boldsymbol{\sigma}_E\mathbf u_i-\theta_i\boldsymbol{\sigma}_S\mathbf u_i$.
+			\pause
 		\item The residuals of all targeted eigenpairs can be collected into a single matrix $\mathbf R$. We can then use its Frobenius norm, $\|\mathbf R\|_F$, as a global convergence criterion.\footfullcite{furcheAcceleratingMolecularProperty2016}
-		
+		\pause
 		\item Particular care must be taken to maintain the orthogonality of the basis vectors in $\mathbf V$. In practice, reorthogonalization may be necessary to avoid numerical loss of orthogonality.
-		
+		\pause
 		\item A \textbf{restart mechanism} can be employed to limit the size of the subspace and improve numerical stability. When its dimension $m$ exceeds a predefined threshold $L$, we retain the most relevant approximate eigenvectors and discard the remaining directions. One way to do this is to perform an SVD of the matrix $\mathbf X$ containing the Ritz vectors to be retained:
 		\begin{equation*}
 			\mathbf X=\mathbf U\boldsymbol{\Sigma}\mathbf W^T.
