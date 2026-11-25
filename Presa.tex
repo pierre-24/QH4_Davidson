@@ -77,6 +77,7 @@
 	\begin{equation*}
 		\ddot{x}(t) + \underbrace{2\gamma\,\dot{x}(t)}_{\text{damping}} + \omega_0^2\,x(t) = \underbrace{\frac{1}{m}\,f(t)}_{\text{external force}}.
 	\end{equation*}
+	\pause
 	Assuming a harmonic driving force $f(t) = F(\omega)e^{-i\omega t}$ and a steady-state response $x(t)=X(\omega)e^{-i\omega t}$, we obtain:
 	\begin{equation*}
 		(-\omega^2-2i\gamma\omega+\omega_0^2)\,X(\omega) = \frac{1}{m}\,F(\omega) \Leftrightarrow \chi(\omega) = \frac{X(\omega)}{F(\omega)} = \frac{1}{m}\,\frac{1}{\omega_0^2-\omega^2-2i\gamma\omega},
@@ -91,6 +92,9 @@
 		\mathbf{M}\,\ddot{\mathbf{x}}(t) + \mathbf{K}\mathbf{x}(t) = 0 \Leftrightarrow -\omega^2\,\mathbf{M}\,\mathbf{x} + \mathbf{K}\,\mathbf{x} = 0 \Leftrightarrow \mathbf{K}\,\mathbf{x} = \omega^2\,\mathbf{M}\,\mathbf{x}.
 	\end{equation*}
 	This is nothing but a (generalized) eigenvalue problem, where each eigenpair $(\omega_i^2,\mathbf{x}_i)$ corresponds to a pair of poles at $\omega=\pm\omega_i$ in the frequency-dependent response.
+	
+	\pause
+	\medskip
 	The equivalent in the context of TD-DFT is the (in)famous Casida equation:\footfullcite{casidaTimeDependentDensityFunctional1995}
 	\begin{equation}
 		\begin{pmatrix}
@@ -127,13 +131,14 @@
 	\begin{center}
 		\Large How do we find the eigenvalues of a matrix?
 	\end{center}
+	\pause
 	Well, you all know from Linear Algebra 101\footnote{Probably also called ``kindergarten math'' by Marc} that you need to find the roots of the characteristic polynomial of the matrix.
 	
 	\medskip
 	But:
 	\begin{enumerate}
-		\item How do you explain that to a computer? Finding the roots of a high-degree polynomial is numerically challenging!
-		\item Do you really need \textbf{all} the eigenvalues? In TD-DFT, you are generally interested in only a relatively small number of low-energy valence excitations, typically in the UV--Vis region, so the \textbf{lowest} eigenvalues.
+		\item How do you explain that to a computer? Finding the roots of a high-degree polynomial is numerically challenging!\pause
+		\item Do you really need \textbf{all} the eigenvalues? In TD-DFT, you are generally interested in only a relatively small number of low-energy valence excitations, typically in the UV--Vis region, so the \textbf{lowest} eigenvalues.\pause
 		\item What if the matrix is so large that it does not fit into your (super)computer's memory? In TD-DFT, the dimension of the Casida matrices is determined by the number of occupied--virtual transitions, $K\times (M-K)$ in closed-shell systems, where $M$ is the total number of molecular orbitals and $K$ is the number of occupied molecular orbitals. This number can become quite large!
 	\end{enumerate}
 \end{frame}
@@ -170,6 +175,7 @@
 	\begin{equation*}
 		\mathbf b_{k+1}\propto \mathbf A\mathbf b_k \propto \mathbf A(\mathbf A\mathbf b_{k-1}) \propto \ldots \propto \mathbf A^k\mathbf b_0.
 	\end{equation*}
+	 \pause
 	Furthermore, assuming that $\mathbf A$ is diagonalizable, its eigenvectors $\{\mathbf v_i\}$ form a basis in which $\mathbf b_0$ can be expressed:
 	\begin{equation*}
 		\mathbf b_0 = \sum_{i=1}^N c_i\,\mathbf v_i.
@@ -222,6 +228,7 @@
 	In other words, the polynomial modifies the contribution of each eigenvector through its value at the corresponding eigenvalue!
 	The power iteration uses only the specific polynomial $p_k(\lambda)=\lambda^k$, whereas Krylov subspaces allow us to combine several powers of $\mathbf A$. This gives us more flexibility to amplify the contributions of eigenvectors we are interested in and suppress those of the others.
 	
+	\pause
 	\begin{center}
 		\Large 
 		The question is now: how do we choose the best linear combination in this subspace?
@@ -266,6 +273,7 @@
 	\end{equation*}
 	where $\mathbf y$ contains the coefficients of the linear combination.
 	
+	\pause
 	\medskip
 	Our goal is to find approximate eigenvectors of $\mathbf A$ within this subspace. To do so, we first project $\mathbf A$ onto the subspace, defining the \textbf{projected matrix}:
 	\begin{equation*}
@@ -314,6 +322,7 @@
 	\medskip
 	The eigenvalues $\theta_i$ are called \textbf{Ritz values}, while the vectors $\mathbf u_i$ are called \textbf{Ritz vectors}.
 	
+	\pause
 	\medskip
 	\begin{center}
 		\Large
@@ -322,8 +331,9 @@
 \end{frame}
 
 \begin{frame}
-	In passing, notice that the Rayleigh--Ritz procedure only requires the action of $\mathbf A$ on the basis vectors, in order to compute $\boldsymbol{\sigma}_A=\mathbf A\mathbf Q$.
+	In passing, notice that the Rayleigh--Ritz procedure only requires the action of $\mathbf A$ on the basis vectors, in order to compute $\boldsymbol{\sigma}_A=\mathbf A\mathbf Q$ (this is in fact the bottleneck of the procedure).
 	
+	\pause
 	\medskip
 	This allows us to adopt a \textbf{matrix-free approach}:
 	\begin{itemize}
@@ -349,6 +359,7 @@
 	One possibility is to use a Krylov subspace, adding successive powers of $\mathbf A$ applied to an initial vector. However, this is not always the most efficient strategy, especially when we are interested in only a few eigenpairs.
 	The \textbf{Davidson algorithm} follows a different strategy: rather than simply adding new powers of $\mathbf A$, it uses the current approximate eigenvectors to determine which directions should be added to the subspace.
 	
+	\pause
 	\medskip
 	Let us consider one of the Ritz pairs $(\theta_i,\mathbf u_i)$ obtained from the Rayleigh--Ritz procedure. Its residual is defined as:
 	\begin{equation*}
@@ -372,10 +383,12 @@
 		(\mathbf A-\theta_i\mathbf I)\,\mathbf v_i\approx\mathbf 0.
 		\label{eq:davidson_approx_eigenvalue}
 	\end{equation}
+	\pause
 	Substituting Eq.~\eqref{eq:davidson_vector_correction} into Eq.~\eqref{eq:davidson_approx_eigenvalue} gives:
 	\begin{equation*}
 		(\mathbf A-\theta_i\mathbf I)(\mathbf u_i+\mathbf t_i)\approx\mathbf 0.
 	\end{equation*}
+	\pause
 	Expanding this expression and using the definition of the residual, $\mathbf r_i=\mathbf A\mathbf u_i-\theta_i\mathbf u_i$, we finally obtain:
 	\begin{equation}
 		\underbrace{(\mathbf A-\theta_i\mathbf I)\,\mathbf u_i}_{\mathbf r_i}+(\mathbf A-\theta_i\mathbf I)\,\mathbf t_i\approx\mathbf 0
@@ -391,6 +404,7 @@
 \begin{frame}
 	Instead of solving Eq.~\eqref{eq:davidson_correction_equation} exactly, Davidson proposed replacing $\mathbf A$ with a much simpler approximation, typically its diagonal part $\mathbf D=\operatorname{diag}(\mathbf A)$. This is particularly effective when the diagonal provides a good approximation to $\mathbf A$.\footnote{This is often the case in TD-DFT!}
 	
+	\pause
 	\medskip
 	The correction equation then becomes:
 	\begin{equation*}
@@ -502,6 +516,7 @@
 	\end{equation*}
 	This is a standard Hermitian eigenvalue problem, which can be solved directly using the Davidson algorithm we have just discussed.
 	
+	\pause
 	\medskip
 	The vector $\mathbf X_m$ contains the amplitudes associated with occupied-to-virtual transitions:
 	\begin{equation*}
@@ -514,6 +529,7 @@
 	Neglecting $\mathbf B$, however, comes at a cost. This matrix couples the so-called excitation vector $\mathbf X_m$ and de-excitation vector $\mathbf Y_m$.
 	While $\mathbf X_m$ describes the forward response, associated with occupied-to-virtual transitions ($i\to a$), $\mathbf Y_m$ describes the backward response, associated with virtual-to-occupied transitions ($a\to i$), and thus, \textbf{relaxation}.
 	
+	\pause
 	\medskip
 	For a stable reference state, the full Casida eigenvectors are usually normalized according to:
 	\begin{equation*}
@@ -523,6 +539,7 @@
 	Moreover, $\mathbf X_m$ and $\mathbf Y_m$ interfere in the transition properties: for instance, $\mu_{0e} \propto \mathbf X_m+\mathbf Y_m$. 
 	Neglecting $\mathbf Y_m$ can therefore affect not only excitation energies (generally overestimated), but also transition densities and derived quantities, such as particle--hole distances.
 	
+	\pause
 	\medskip
 	Interestingly, these de-excitation contributions have a deeper physical meaning. As discussed by Plasser,\footfullcite{plasserMeaningDeExcitationsTimeDependent2025} they can be interpreted as a manifestation of \textbf{multi-configurational character}.
 	If you want to go further down that rabbit hole, feel free to contact Tarcius and me!
@@ -556,6 +573,7 @@
 			\mathbf Q_m
 		\end{pmatrix}.
 	\end{equation*}
+	\pause
 	This gives us the two coupled equations:
 	\begin{equation*}
 		\begin{cases}
@@ -564,6 +582,7 @@
 		\end{cases}
 	\end{equation*}
 	
+	\pause
 	\medskip
 	We can eliminate $\mathbf Q_m$ by substituting the second equation into the first:
 	\begin{equation*}
@@ -578,6 +597,7 @@
 	\begin{equation*}
 		\mathbf P_m=(\mathbf A-\mathbf B)^{1/2}\,\mathbf z_m.
 	\end{equation*}
+	\pause
 	Assuming that $\mathbf A-\mathbf B$ is positive definite, we can transform the eigenvalue problem into:
 	\begin{equation}
 		\boxed{
@@ -587,6 +607,7 @@
 	\end{equation}
 	The matrix is now Hermitian, and we can use standard Hermitian eigensolvers to obtain the squared excitation energies.
 	
+	\pause
 	\medskip
 	The eigenvalues $\lambda_m = \omega_m^2$ are non-negative for a stable reference state, and each positive eigenvalue gives an excitation energy $\omega_m=\sqrt{\lambda_m}$ (they comes in pair, but we only care about $\omega_m > 0$).
 	Once these and the eigenvectors are known, we can recover the original amplitudes:
@@ -650,6 +671,7 @@
 			\mathbf Q_m
 		\end{pmatrix}.
 	\end{equation*}
+	\pause
 	We can apply the same subspace projection strategy as before. Let $\mathbf V$ be an orthonormal basis of our trial subspace. We first compute the action of the two matrices on this basis:
 	\begin{equation*}
 		\boldsymbol{\sigma}_E=\mathbf E^{[2]}\mathbf V,
